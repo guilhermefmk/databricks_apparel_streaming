@@ -170,7 +170,7 @@ Tips:
 ### ---------------------
 ### Write Your Code Here ###
 @dlt.table(name=BRONZE_CUSTOMERS, comment="Raw customers data from landing zone")
-@dlt.expect_or_fail("valid_transaction_id", "transaction_id is not null")
+@dlt.expect_or_fail("valid_customer_id", "customer_id is not null")
 def bronze_sales():
     return (
         spark.readStream.format("delta")
@@ -249,6 +249,27 @@ Tips:
 ### Write Your Code Here ###
 
 
+@dlt.table(name=BRONZE_PRODUCTS, comment="Raw products data from landing zone")
+@dlt.expect_or_fail("valid_product_id", "product_id is not null")
+def bronze_sales():
+    return (
+        spark.readStream.format("delta")
+        .load(RAW_PRODUCTS_PATH)  # Treat a sequence of files as a stream by picking one file at a time
+        .withColumn("ingest_timestamp", F.lit(datetime.now(timezone.utc)))
+        .withColumn("source_file_path", F.col("_metadata.file_path"))
+        .withColumn("product_id", F.col("product_id").cast("int"))
+        .withColumn("name", F.col("name").cast("string"))
+        .withColumn("category", F.col("category").cast("string"))
+        .withColumn("brand", F.col("brand").cast("string"))
+        .withColumn("price", F.col("price").cast("double"))
+        .withColumn("stock_quantity", F.col("stock_quantity").cast("int"))
+        .withColumn("size", F.col("size").cast("string"))
+        .withColumn("color", F.col("color").cast("string"))
+        .withColumn("description", F.col("description").cast("string"))
+        .withColumn("last_update_time", F.col("last_update_time").cast("timestamp"))
+    )
+
+
 ### ---------------------
 ### Solution Is Below
 # @dlt.table(name=BRONZE_PRODUCTS, comment="Raw products data")
@@ -308,6 +329,25 @@ Tips:
 ### Write Your Code Here ###
 
 
+@dlt.table(name=BRONZE_STORES, comment="Raw stores data from landing zone")
+@dlt.expect_or_fail("valid_store_id", "store_id is not null")
+def bronze_sales():
+    return (
+        spark.readStream.format("delta")
+        .load(RAW_STORES_PATH)  # Treat a sequence of files as a stream by picking one file at a time
+        .withColumn("ingest_timestamp", F.lit(datetime.now(timezone.utc)))
+        .withColumn("source_file_path", F.col("_metadata.file_path"))
+        .withColumn("store_id", F.col("store_id").cast("int"))
+        .withColumn("name", F.col("name").cast("string"))
+        .withColumn("address", F.col("address").cast("string"))
+        .withColumn("manager", F.col("manager").cast("string"))
+        .withColumn("open_date", F.col("open_date").cast("timestamp"))
+        .withColumn("status", F.col("status").cast("string"))
+        .withColumn("phone_number", F.col("phone_number").cast("string"))
+        .withColumn("last_update_time", F.col("last_update_time").cast("timestamp"))
+    )
+
+
 ### ---------------------
 ### Solution Is Below
 # @dlt.table(name=BRONZE_STORES, comment="Raw stores data")
@@ -320,19 +360,6 @@ Tips:
 #         .withColumn("store_id", F.col("store_id").cast("int"))
 #         .withColumn("name", F.col("name").cast("string"))
 #         .withColumn("address", F.col("address").cast("string"))
-#         .withColumn("manager", F.col("manager").cast("string"))
-#         .withColumn("open_date", F.col("open_date").cast("timestamp"))
-#         .withColumn("status", F.col("status").cast("string"))
-#         .withColumn("phone_number", F.col("phone_number").cast("string"))
-#         .withColumn("last_update_time", F.col("last_update_time").cast("timestamp"))
-#     )
-#         .withColumn("manager", F.col("manager").cast("string"))
-#         .withColumn("open_date", F.col("open_date").cast("timestamp"))
-#         .withColumn("status", F.col("status").cast("string"))
-#         .withColumn("phone_number", F.col("phone_number").cast("string"))
-#         .withColumn("last_update_time", F.col("last_update_time").cast("timestamp"))
-#     )
-#     )
 #         .withColumn("manager", F.col("manager").cast("string"))
 #         .withColumn("open_date", F.col("open_date").cast("timestamp"))
 #         .withColumn("status", F.col("status").cast("string"))
