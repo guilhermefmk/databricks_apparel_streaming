@@ -1,9 +1,17 @@
-from variables import *
-import dlt
 from datetime import datetime, timezone
+
 from pyspark.sql import functions as F
+from pyspark.sql.types import (
+    DoubleType,
+    IntegerType,
+    StringType,
+    StructField,
+    StructType,
+    TimestampType,
+)
 from variables import *
 
+import dlt
 
 """
 ✅ Bronze Layer: Raw Data Ingestion
@@ -75,28 +83,68 @@ Tip:
 ### ---------------------
 ### Write Your Code Here ###
 
+# Define the schema to speed up processing
+salesSchema = StructType(
+    [
+        StructField("customer_id", IntegerType()),
+        StructField("discount_applied", DoubleType()),
+        StructField("event_time", TimestampType()),
+        StructField("payment_method", StringType()),
+        StructField("product_id", IntegerType()),
+        StructField("quantity", IntegerType()),
+        StructField("store_id", IntegerType()),
+        StructField("tax_amount", DoubleType()),
+        StructField("total_amount", DoubleType()),
+        StructField("transaction_id", IntegerType()),
+        StructField("unit_price", DoubleType()),
+    ]
+)
+
+
+@dlt.table(name=BRONZE_SALES, comment="Raw sales data")
+@dlt.expect_or_fail("valid_transaction_id", "transaction_id is not null")
+def bronze_sales():
+    return (
+        spark.readStream.schema(salesSchema)
+        .format("delta")
+        .load(RAW_SALES_PATH)  # Set the schema of the Parquet data  # Treat a sequence of files as a stream by picking one file at a time
+        .withColumn("ingest_timestamp", F.lit(datetime.now(timezone.utc)))
+        .withColumn("source_file_path", F.col("_metadata.file_path"))
+        .withColumn("customer_id", F.col("customer_id").cast("int"))
+        .withColumn("discount_applied", F.col("discount_applied").cast("double"))
+        .withColumn("event_time", F.col("event_time").cast("timestamp"))
+        .withColumn("payment_method", F.col("payment_method").cast("string"))
+        .withColumn("product_id", F.col("product_id").cast("int"))
+        .withColumn("quantity", F.col("quantity").cast("int"))
+        .withColumn("store_id", F.col("store_id").cast("int"))
+        .withColumn("tax_amount", F.col("tax_amount").cast("double"))
+        .withColumn("total_amount", F.col("total_amount").cast("double"))
+        .withColumn("transaction_id", F.col("transaction_id").cast("int"))
+        .withColumn("unit_price", F.col("unit_price").cast("double"))
+    )
+
 
 ### ---------------------
-### Solution Is Below 
+### Solution Is Below
 # @dlt.table(name=BRONZE_SALES, comment = "Raw sales data")
 # @dlt.expect_or_fail("valid_transaction_id", "transaction_id is not null")
 # def bronze_sales():
-#     return (
-#         spark.readStream.format("delta").load(RAW_SALES_PATH)
-#         .withColumn("ingest_timestamp", F.lit(datetime.now(timezone.utc)))
-#         .withColumn("source_file_path", F.col("_metadata.file_path"))
-#         .withColumn("transaction_id", F.col("transaction_id").cast("int"))
-#         .withColumn("store_id", F.col("store_id").cast("int"))
-#         .withColumn("event_time", F.col("event_time").cast("timestamp"))
-#         .withColumn("customer_id", F.col("customer_id").cast("int"))
-#         .withColumn("product_id", F.col("product_id").cast("int"))
-#         .withColumn("quantity", F.col("quantity").cast("int"))
-#         .withColumn("unit_price", F.col("unit_price").cast("double"))
-#         .withColumn("total_amount", F.col("total_amount").cast("double"))
-#         .withColumn("payment_method", F.col("payment_method").cast("string"))
-#         .withColumn("discount_applied", F.col("discount_applied").cast("double"))
-#         .withColumn("tax_amount", F.col("tax_amount").cast("double"))
-#     )
+# return (
+#     spark.readStream.format("delta").load(RAW_SALES_PATH)
+#     .withColumn("ingest_timestamp", F.lit(datetime.now(timezone.utc)))
+#     .withColumn("source_file_path", F.col("_metadata.file_path"))
+#     .withColumn("transaction_id", F.col("transaction_id").cast("int"))
+#     .withColumn("store_id", F.col("store_id").cast("int"))
+#     .withColumn("event_time", F.col("event_time").cast("timestamp"))
+#     .withColumn("customer_id", F.col("customer_id").cast("int"))
+#     .withColumn("product_id", F.col("product_id").cast("int"))
+#     .withColumn("quantity", F.col("quantity").cast("int"))
+#     .withColumn("unit_price", F.col("unit_price").cast("double"))
+#     .withColumn("total_amount", F.col("total_amount").cast("double"))
+#     .withColumn("payment_method", F.col("payment_method").cast("string"))
+#     .withColumn("discount_applied", F.col("discount_applied").cast("double"))
+#     .withColumn("tax_amount", F.col("tax_amount").cast("double"))
+# )
 
 ##########################################################################################
 ##########################################################################################
@@ -140,7 +188,7 @@ Tips:
 
 
 ### ---------------------
-### Solution Is Below 
+### Solution Is Below
 # @dlt.table(name=BRONZE_CUSTOMERS, comment="Raw customers data from landing zone")
 # @dlt.expect_or_fail("valid_customer_id", "customer_id is not null")
 # def bronze_customers():
@@ -199,7 +247,7 @@ Tips:
 
 
 ### ---------------------
-### Solution Is Below 
+### Solution Is Below
 # @dlt.table(name=BRONZE_PRODUCTS, comment="Raw products data")
 # @dlt.expect_or_fail("valid_product_id", "product_id is not null")
 # def bronze_products():
@@ -258,7 +306,7 @@ Tips:
 
 
 ### ---------------------
-### Solution Is Below 
+### Solution Is Below
 # @dlt.table(name=BRONZE_STORES, comment="Raw stores data")
 # @dlt.expect_or_fail("valid_store_id", "store_id is not null")
 # def bronze_stores():
@@ -269,6 +317,19 @@ Tips:
 #         .withColumn("store_id", F.col("store_id").cast("int"))
 #         .withColumn("name", F.col("name").cast("string"))
 #         .withColumn("address", F.col("address").cast("string"))
+#         .withColumn("manager", F.col("manager").cast("string"))
+#         .withColumn("open_date", F.col("open_date").cast("timestamp"))
+#         .withColumn("status", F.col("status").cast("string"))
+#         .withColumn("phone_number", F.col("phone_number").cast("string"))
+#         .withColumn("last_update_time", F.col("last_update_time").cast("timestamp"))
+#     )
+#         .withColumn("manager", F.col("manager").cast("string"))
+#         .withColumn("open_date", F.col("open_date").cast("timestamp"))
+#         .withColumn("status", F.col("status").cast("string"))
+#         .withColumn("phone_number", F.col("phone_number").cast("string"))
+#         .withColumn("last_update_time", F.col("last_update_time").cast("timestamp"))
+#     )
+#     )
 #         .withColumn("manager", F.col("manager").cast("string"))
 #         .withColumn("open_date", F.col("open_date").cast("timestamp"))
 #         .withColumn("status", F.col("status").cast("string"))
