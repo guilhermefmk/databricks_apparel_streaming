@@ -80,34 +80,16 @@ Requirements:
 Tip:
     If stuck, see the solution below.
 """
+
+
 ### ---------------------
 ### Write Your Code Here ###
-
-# Define the schema to speed up processing
-salesSchema = StructType(
-    [
-        StructField("customer_id", IntegerType()),
-        StructField("discount_applied", DoubleType()),
-        StructField("event_time", TimestampType()),
-        StructField("payment_method", StringType()),
-        StructField("product_id", IntegerType()),
-        StructField("quantity", IntegerType()),
-        StructField("store_id", IntegerType()),
-        StructField("tax_amount", DoubleType()),
-        StructField("total_amount", DoubleType()),
-        StructField("transaction_id", IntegerType()),
-        StructField("unit_price", DoubleType()),
-    ]
-)
-
-
 @dlt.table(name=BRONZE_SALES, comment="Raw sales data")
 @dlt.expect_or_fail("valid_transaction_id", "transaction_id is not null")
 def bronze_sales():
     return (
-        spark.readStream.schema(salesSchema)
-        .format("delta")
-        .load(RAW_SALES_PATH)  # Set the schema of the Parquet data  # Treat a sequence of files as a stream by picking one file at a time
+        spark.readStream.format("delta")
+        .load(RAW_SALES_PATH)  # Treat a sequence of files as a stream by picking one file at a time
         .withColumn("ingest_timestamp", F.lit(datetime.now(timezone.utc)))
         .withColumn("source_file_path", F.col("_metadata.file_path"))
         .withColumn("customer_id", F.col("customer_id").cast("int"))
@@ -160,12 +142,12 @@ Business Logic:
     integrity for all downstream customer analytics.
 
 Requirements:
-    [ ] Read as a stream from the `customers` directory - use the `RAW_CUSTOMERS_PATH` variable.
+    [ X ] Read as a stream from the `customers` directory - use the `RAW_CUSTOMERS_PATH` variable.
     
-    [ ] Add `comment`: "Raw customers data from landing zone".
+    [ X ] Add `comment`: "Raw customers data from landing zone".
         Business logic: Use comments to clarify the source and business role of the table.
     
-    [ ] Add `ingest_timestamp` and `source_file_path` columns.
+    [ X ] Add `ingest_timestamp` and `source_file_path` columns.
         Business logic: Track when and where customer data was ingested for compliance 
         and troubleshooting.
     
@@ -183,8 +165,29 @@ Tips:
       schema or data quality issues early.
     - If stuck, see the solution below.
 """
+
+
 ### ---------------------
 ### Write Your Code Here ###
+@dlt.table(name=BRONZE_CUSTOMERS, comment="Raw customers data from landing zone")
+@dlt.expect_or_fail("valid_transaction_id", "transaction_id is not null")
+def bronze_sales():
+    return (
+        spark.readStream.format("delta")
+        .load(RAW_CUSTOMERS_PATH)  # Treat a sequence of files as a stream by picking one file at a time
+        .withColumn("ingest_timestamp", F.lit(datetime.now(timezone.utc)))
+        .withColumn("source_file_path", F.col("_metadata.file_path"))
+        .withColumn("customer_id", F.col("customer_id").cast("int"))
+        .withColumn("name", F.col("name").cast("string"))
+        .withColumn("email", F.col("email").cast("string"))
+        .withColumn("address", F.col("address").cast("string"))
+        .withColumn("join_date", F.col("join_date").cast("timestamp"))
+        .withColumn("loyalty_points", F.col("loyalty_points").cast("int"))
+        .withColumn("phone_number", F.col("phone_number").cast("string"))
+        .withColumn("age", F.col("age").cast("int"))
+        .withColumn("gender", F.col("gender").cast("string"))
+        .withColumn("last_update_time", F.col("last_update_time").cast("timestamp"))
+    )
 
 
 ### ---------------------
